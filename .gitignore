@@ -1,0 +1,9 @@
+*.pyc
+.direnv
+.envrc
+.vscode
+.DS_store
+.Python
+.chalice/deployments/
+.chalice/venv/
+testdata.db
