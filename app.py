@@ -81,9 +81,8 @@ def getBirdsForHunt(id):
     return alchemyRowObjsToJson(birds)
 
 
-@app.route('/hunts', methods=['POST'])
-def addHunt():
-
+# @app.route('/hunts', methods=['POST'])
+# def addHunt():
 
 
 @app.route('/birds', methods=['GET'])
