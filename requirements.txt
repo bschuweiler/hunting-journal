@@ -1,2 +1,4 @@
 chalice
 sqlalchemy
+marshmallow
+marshmallow-sqlalchemy

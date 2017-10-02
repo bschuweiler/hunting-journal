@@ -3,8 +3,12 @@ import json
 from sqlalchemy import create_engine, inspect, extract
 from sqlalchemy.orm import sessionmaker
 from datetime import date
+from marshmallow import Schema, fields, pprint
 
-from orm import Base, Hunt, Bird, Hunter
+from orm import (
+    Base, Hunt, Bird, Hunter, HuntHunter,
+    HuntSchema, BirdSchema, HunterSchema, HuntHunterSchema
+)
 
 _db = 'sqlite:///testdata.db'
 _dbEngine = create_engine(_db)
@@ -13,33 +17,21 @@ _Session = sessionmaker(bind=_dbEngine)
 app = Chalice(app_name='hunting-journal')
 app.debug = True
 
-"""
-These SQLAlchemy conversion methods to
-JSON seem hacky - must be a better way
-"""
+
+def dbResultsToSchemaObjects(items, schema):
+    returnList = []
+    for item in items:
+        returnList.append(schema.dump(item).data)
+    
+    if len(returnList) == 1:
+        return returnList[0]
+    return returnList
 
 
-def alchemyencoder(obj):
-    if isinstance(obj, date):
-        return obj.isoformat()
-    elif isinstance(obj, decimal.Decimal):
-        return float(obj)
-
-
-def alchemyObjAsDict(obj):
-    return {c.key: getattr(obj, c.key)
-            for c in inspect(obj).mapper.column_attrs}
-
-
-def alchemyRowObjsToJson(rows):
-    return json.dumps([alchemyObjAsDict(row) for row in rows],
-                      default=alchemyencoder)
-
-
-def getAllResources(model):
+def getAllResources(model, schema):
     session = _Session()
     items = session.query(model).all()
-    return alchemyRowObjsToJson(items)
+    return dbResultsToSchemaObjects(items, schema)
 
 
 @app.route('/', methods=['GET'])
@@ -62,7 +54,8 @@ def getHunts():
     else:
         raise BadRequestError('unknown query parameter on request')
 
-    return alchemyRowObjsToJson(hunts)
+    huntSchema = HuntSchema()
+    return dbResultsToSchemaObjects(hunts, huntSchema)
 
 
 @app.route('/hunts/{id}', methods=['GET'])
@@ -70,7 +63,9 @@ def getHunt(id):
     session = _Session()
 
     hunt = session.query(Hunt).filter(Hunt.id == id)
-    return alchemyRowObjsToJson(hunt)
+
+    huntSchema = HuntSchema()
+    return dbResultsToSchemaObjects(hunt, huntSchema)
 
 
 @app.route('/hunts/{id}/birds', methods=['GET'])
@@ -78,7 +73,8 @@ def getBirdsForHunt(id):
     session = _Session()
 
     birds = session.query(Bird).filter(Bird.Hunt_id == id)
-    return alchemyRowObjsToJson(birds)
+    birdSchema = BirdSchema()
+    return dbResultsToSchemaObjects(birds, birdSchema)
 
 
 # @app.route('/hunts', methods=['POST'])
@@ -87,9 +83,11 @@ def getBirdsForHunt(id):
 
 @app.route('/birds', methods=['GET'])
 def getBirds():
-    return getAllResources(Bird)
+    birdSchema = BirdSchema()
+    return getAllResources(Bird, birdSchema)
 
 
 @app.route('/hunters', methods=['GET'])
 def getHunters():
-    return getAllResources(Hunter)
+    hunterSchema = HunterSchema()
+    return getAllResources(Hunter, hunterSchema)
