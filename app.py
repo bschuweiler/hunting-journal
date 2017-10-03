@@ -123,9 +123,20 @@ def getBirdsForHunt(id):
     if not hunt:
         raise NotFoundError('No hunt found with id %s' % (id))
 
-    birds = session.query(Bird).filter(Bird.Hunt_id == id)
     birdSchema = BirdSchema()
-    return dbResultsToSchemaObjects(birds, birdSchema)
+    return dbResultsToSchemaObjects(hunt.birds, birdSchema)
+
+
+@app.route('/hunts/{id}/hunters', methods=['GET'])
+def getHuntersForHunt(id):
+    session = _Session()
+
+    hunt = session.query(Hunt).get(id)
+    if not hunt:
+        raise NotFoundError('No hunt found with id %s' % (id))
+
+    hunterSchema = HunterSchema()
+    return dbResultsToSchemaObjects(hunt.hunters, hunterSchema)
 
 
 @app.route('/hunts', methods=['POST'])
@@ -222,6 +233,18 @@ def deleteHunt(id):
 def getBirds():
     birdSchema = BirdSchema()
     return getAllResources(Bird, birdSchema)
+
+
+@app.route('/birds/{id}', methods=['GET'])
+def getBird(id):
+    session = _Session()
+
+    bird = session.query(Bird).get(id)
+    if not bird:
+        raise NotFoundError('No bird found with id %s' % (id))
+
+    birdSchema = BirdSchema()
+    return dbResultsToSchemaObjects(bird, birdSchema)
 
 
 @app.route('/hunters', methods=['GET'])
