@@ -57,6 +57,10 @@ class Hunt(Base):
     hunters = relationship('Hunter', secondary='hunt_hunter')
     birds = relationship('Bird', backref='hunt')
 
+    def __str__(self):
+        return "\{id: {} date: {}, location: {}, timeofday: {}\}"\
+               % (self.id, self.date, self.location, self.timeofday)
+
 
 class Hunter(Base):
     __tablename__ = 'hunter'

@@ -2,7 +2,7 @@ from chalice import Chalice, BadRequestError
 import json
 from sqlalchemy import create_engine, inspect, extract
 from sqlalchemy.orm import sessionmaker
-from datetime import date
+from datetime import datetime
 from marshmallow import Schema, fields, pprint
 
 from orm import (
@@ -22,7 +22,7 @@ def dbResultsToSchemaObjects(items, schema):
     returnList = []
     for item in items:
         returnList.append(schema.dump(item).data)
-    
+
     if len(returnList) == 1:
         return returnList[0]
     return returnList
@@ -77,8 +77,53 @@ def getBirdsForHunt(id):
     return dbResultsToSchemaObjects(birds, birdSchema)
 
 
-# @app.route('/hunts', methods=['POST'])
-# def addHunt():
+@app.route('/hunts', methods=['POST'])
+def addHunts():
+    session = _Session()
+
+    request = app.current_request
+    data = request.json_body
+    if not isinstance(data, dict):
+        raise BadRequestError(
+            'Invalid POST data - endpoint accepts single hunt JSON object')
+
+    # TODO: Make this more specific so you know
+    # what's missing or maybe this should be some schema check
+    if not data.get('date') or\
+       not data.get('location') or\
+       not data.get('timeofday') or\
+       not data.get('hunters'):
+        raise BadRequestError('Missing required information')
+
+    # Get referenced Hunter objects
+    hunters = session.query(Hunter).filter(
+        Hunter.id.in_(data.get('hunters'))).all()
+
+    # Build up Bird entries
+    birds = []
+    for bird in data.get('birds'):
+        birds.append(Bird(species=bird.get('species'),
+                          gender=bird.get('gender'),
+                          lost=bird.get('lost'),
+                          banded=bird.get('banded'),
+                          mounted=bird.get('mounted')))
+
+    # Construct Hunt entries
+    hunt = Hunt(date=datetime.strptime(data.get('date'), '%Y-%m-%d'),
+                location=data.get('location'),
+                timeofday=data.get('timeofday'),
+                hunters=hunters,
+                birds=birds)
+
+    session.add(hunt)
+    session.commit()
+
+    return '{ "id": %d}' % (hunt.id)
+
+
+# @app.route('/hunts', methods=['DELETE'])
+# def deleteHunts():
+
 
 
 @app.route('/birds', methods=['GET'])
