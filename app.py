@@ -17,9 +17,18 @@ app = Chalice(app_name='hunting-journal')
 app.debug = True
 
 # TODO: Tests
+# TODO: Swagger
+# TODO: Check for injection issues
 # TODO: Update endpoints for hunt (PUT)
+# TODO: Move some code to some services or something - too much in here:
+# http://chalice.readthedocs.io/en/latest/topics/packaging.html
+# TODO: Clean up imports, make requirements.txt accurate
+# TODO: Some backup option for yearly dumps to csv or something
+# or just be comfortable with format + RDS replicas?
+# TODO: Externalize config like _db - sqlite for local, RDS for lambda
 # TODO: Authentication? (or just defer to hosting w/AWS and API Gateway front?)
 # TODO: HTTP caching ETag or Last-Modified w/ 304, etc. when appropriate
+# TODO: Hypermedia or at least a better index route with available endpoints?
 
 
 def dbResultsToSchemaObjects(results, schema):
@@ -44,7 +53,7 @@ def getAllResources(model, schema):
 def validateHuntRequestBody(json):
     if not isinstance(json, dict):
         raise BadRequestError(
-            'Invalid POST data - endpoint accepts single hunt JSON object')
+            'Invalid body - endpoint accepts single hunt JSON object')
 
     # TODO: Make this more specific so you know
     # what's missing or maybe this should be some schema check
@@ -56,6 +65,18 @@ def validateHuntRequestBody(json):
        not json.get('timeofday') or\
        not json.get('hunters'):
         raise BadRequestError('Missing required information')
+
+
+def validateHunterRequestBody(json):
+    if not isinstance(json, dict):
+        raise BadRequestError(
+            'Invalid body - endpoint accepts single hunter JSON object')
+
+    if not json.get('firstname'):
+        raise BadRequestError('Missing firstname')
+
+    if not json.get('lastname'):
+        raise BadRequestError('Missing lastname')
 
 
 @app.route('/', methods=['GET'])
@@ -207,3 +228,55 @@ def getBirds():
 def getHunters():
     hunterSchema = HunterSchema()
     return getAllResources(Hunter, hunterSchema)
+
+
+@app.route('/hunters/{id}', methods=['GET'])
+def getHunter(id):
+    session = _Session()
+
+    hunter = session.query(Hunter).get(id)
+    if not hunter:
+        raise NotFoundError('No hunter found with id %s' % (id))
+
+    hunterSchema = HunterSchema()
+    return dbResultsToSchemaObjects(hunter, hunterSchema)
+
+
+@app.route('/hunters', methods=['POST'])
+def addHunter():
+    session = _Session()
+
+    request = app.current_request
+    json = request.json_body
+    validateHunterRequestBody(json)
+
+    existingHunters = session.query(Hunter).\
+        filter(Hunter.firstname == json.get('firstname'),
+               Hunter.lastname == json.get('lastname')).all()
+
+    if len(existingHunters) > 0:
+        raise BadRequestError("Specified hunter already exists")
+
+    hunter = Hunter(firstname=json.get('firstname'),
+                    lastname=json.get('lastname'))
+
+    session.add(hunter)
+    session.commit()
+
+    hunterSchema = HunterSchema()
+    return dbResultsToSchemaObjects(hunter, hunterSchema)
+
+
+@app.route('/hunters/{id}', methods=['PUT'])
+def updateHunter(id):
+    session = _Session()
+
+    request = app.current_request
+    json = request.json_body
+    validateHunterRequestBody(json)
+
+    hunter = session.query(Hunter).get(id)
+    hunter.firstname = json.get('firstname')
+    hunter.lastname = json.get('lastname')
+
+    session.commit()
