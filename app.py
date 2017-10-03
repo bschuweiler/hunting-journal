@@ -1,5 +1,6 @@
 from chalice import Chalice, BadRequestError
 import json
+import collections
 from sqlalchemy import create_engine, inspect, extract
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
@@ -18,14 +19,17 @@ app = Chalice(app_name='hunting-journal')
 app.debug = True
 
 
-def dbResultsToSchemaObjects(items, schema):
-    returnList = []
-    for item in items:
-        returnList.append(schema.dump(item).data)
+def dbResultsToSchemaObjects(results, schema):
+    if isinstance(results, collections.Iterable):
+        returnList = []
+        for result in results:
+            returnList.append(schema.dump(result).data)
 
-    if len(returnList) == 1:
-        return returnList[0]
-    return returnList
+        if len(returnList) == 1:
+            return returnList[0]
+        return returnList
+    else:
+        return schema.dump(results).data
 
 
 def getAllResources(model, schema):
@@ -118,12 +122,22 @@ def addHunts():
     session.add(hunt)
     session.commit()
 
-    return '{ "id": %d}' % (hunt.id)
+    huntSchema = HuntSchema()
+    return dbResultsToSchemaObjects(hunt, huntSchema)
 
 
-# @app.route('/hunts', methods=['DELETE'])
-# def deleteHunts():
+@app.route('/hunts/{id}', methods=['DELETE'])
+def deleteHunts(id):
+    session = _Session()
 
+    huntHunterEntries = session.query(HuntHunter)\
+                               .filter(HuntHunter.hunt_id == id)\
+                               .all()
+    for entry in huntHunterEntries:
+        session.delete(entry)
+
+    session.delete(session.query(Hunt).get(id))
+    session.commit()
 
 
 @app.route('/birds', methods=['GET'])

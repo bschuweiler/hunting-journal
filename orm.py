@@ -55,11 +55,12 @@ class Hunt(Base):
     location = Column(String(50), nullable=False)
     timeofday = Column(Enum(*TimeOfDayEnum), nullable=False)
     hunters = relationship('Hunter', secondary='hunt_hunter')
-    birds = relationship('Bird', backref='hunt')
+    birds = relationship('Bird', backref='hunt',
+                         cascade='all, delete, delete-orphan')
 
-    def __str__(self):
-        return "\{id: {} date: {}, location: {}, timeofday: {}\}"\
-               % (self.id, self.date, self.location, self.timeofday)
+    def __repr__(self):
+        return '<Hunt(id=%s, date=%s, location=%s, timeofday=%s)>'\
+            % (self.id, self.date, self.location, self.timeofday)
 
 
 class Hunter(Base):
@@ -68,6 +69,10 @@ class Hunter(Base):
     firstname = Column(String(20), nullable=False)
     lastname = Column(String(50), nullable=False)
 
+    def __repr__(self):
+        return '<Hunter(id=%s, firstname=%s, lastname=%s)>'\
+            % (self.id, self.firstname, self.lastname)
+
 
 class HuntHunter(Base):
     __tablename__ = 'hunt_hunter'
@@ -75,6 +80,10 @@ class HuntHunter(Base):
     hunter_id = Column(Integer, ForeignKey('hunter.id'), primary_key=True)
     hunter = relationship('Hunter', backref='hunt_associations')
     hunt = relationship('Hunt', backref='hunter_associations')
+
+    def __repr__(self):
+        return '<HuntHunter(hunt_id=%s, hunter_id=%s)>'\
+            % (self.hunt_id, self.hunter_id)
 
 
 class Bird(Base):
@@ -86,6 +95,12 @@ class Bird(Base):
     lost = Column(Boolean, default=False)
     mounted = Column(Boolean, default=False)
     Hunt_id = Column(Integer, ForeignKey('hunt.id'))
+
+    def __repr__(self):
+        return '<Bird(id=%s, species=%s, gender=%s,\
+                    banded=%s, lost=%s, mounted=%s)>'\
+                        % (self.id, self.species, self.gender,
+                           self.banded, self.lost, self.mounted)
 
 
 class HuntSchema(ModelSchema):
