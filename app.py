@@ -1,10 +1,8 @@
-from chalice import Chalice, BadRequestError
-import json
+from chalice import Chalice, BadRequestError, NotFoundError, Response
 import collections
-from sqlalchemy import create_engine, inspect, extract
+from sqlalchemy import create_engine, extract
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
-from marshmallow import Schema, fields, pprint
 
 from orm import (
     Base, Hunt, Bird, Hunter, HuntHunter,
@@ -17,6 +15,11 @@ _Session = sessionmaker(bind=_dbEngine)
 
 app = Chalice(app_name='hunting-journal')
 app.debug = True
+
+# TODO: Tests
+# TODO: Update endpoints for hunt (PUT)
+# TODO: Authentication? (or just defer to hosting w/AWS and API Gateway front?)
+# TODO: HTTP caching ETag or Last-Modified w/ 304, etc. when appropriate
 
 
 def dbResultsToSchemaObjects(results, schema):
@@ -36,6 +39,23 @@ def getAllResources(model, schema):
     session = _Session()
     items = session.query(model).all()
     return dbResultsToSchemaObjects(items, schema)
+
+
+def validateHuntRequestBody(json):
+    if not isinstance(json, dict):
+        raise BadRequestError(
+            'Invalid POST data - endpoint accepts single hunt JSON object')
+
+    # TODO: Make this more specific so you know
+    # what's missing or maybe this should be some schema check
+    # and include field-level error info
+
+    # TODO: birds are not required but if provided, should be validated
+    if not json.get('date') or\
+       not json.get('location') or\
+       not json.get('timeofday') or\
+       not json.get('hunters'):
+        raise BadRequestError('Missing required information')
 
 
 @app.route('/', methods=['GET'])
@@ -66,7 +86,9 @@ def getHunts():
 def getHunt(id):
     session = _Session()
 
-    hunt = session.query(Hunt).filter(Hunt.id == id)
+    hunt = session.query(Hunt).get(id)
+    if not hunt:
+        raise NotFoundError('No hunt found with id %s' % (id))
 
     huntSchema = HuntSchema()
     return dbResultsToSchemaObjects(hunt, huntSchema)
@@ -76,36 +98,33 @@ def getHunt(id):
 def getBirdsForHunt(id):
     session = _Session()
 
+    hunt = session.query(Hunt).get(id)
+    if not hunt:
+        raise NotFoundError('No hunt found with id %s' % (id))
+
     birds = session.query(Bird).filter(Bird.Hunt_id == id)
     birdSchema = BirdSchema()
     return dbResultsToSchemaObjects(birds, birdSchema)
 
 
 @app.route('/hunts', methods=['POST'])
-def addHunts():
+def addHunt():
     session = _Session()
 
     request = app.current_request
-    data = request.json_body
-    if not isinstance(data, dict):
-        raise BadRequestError(
-            'Invalid POST data - endpoint accepts single hunt JSON object')
-
-    # TODO: Make this more specific so you know
-    # what's missing or maybe this should be some schema check
-    if not data.get('date') or\
-       not data.get('location') or\
-       not data.get('timeofday') or\
-       not data.get('hunters'):
-        raise BadRequestError('Missing required information')
+    json = request.json_body
+    validateHuntRequestBody(json)
 
     # Get referenced Hunter objects
     hunters = session.query(Hunter).filter(
-        Hunter.id.in_(data.get('hunters'))).all()
+        Hunter.id.in_(json.get('hunters'))).all()
+
+    if not hunters or (len(hunters) != len(json.get('hunters'))):
+        raise NotFoundError('One or more specified hunters does not exist')
 
     # Build up Bird entries
     birds = []
-    for bird in data.get('birds'):
+    for bird in json.get('birds'):
         birds.append(Bird(species=bird.get('species'),
                           gender=bird.get('gender'),
                           lost=bird.get('lost'),
@@ -113,9 +132,9 @@ def addHunts():
                           mounted=bird.get('mounted')))
 
     # Construct Hunt entries
-    hunt = Hunt(date=datetime.strptime(data.get('date'), '%Y-%m-%d'),
-                location=data.get('location'),
-                timeofday=data.get('timeofday'),
+    hunt = Hunt(date=datetime.strptime(json.get('date'), '%Y-%m-%d'),
+                location=json.get('location'),
+                timeofday=json.get('timeofday'),
                 hunters=hunters,
                 birds=birds)
 
@@ -126,9 +145,47 @@ def addHunts():
     return dbResultsToSchemaObjects(hunt, huntSchema)
 
 
-@app.route('/hunts/{id}', methods=['DELETE'])
-def deleteHunts(id):
+@app.route('/hunts/{id}', methods=['PUT'])
+def updateHunt(id):
     session = _Session()
+
+    request = app.current_request
+    json = request.json_body
+    validateHuntRequestBody(json)
+
+    # Get referenced Hunter objects
+    hunters = session.query(Hunter).filter(
+        Hunter.id.in_(json.get('hunters'))).all()
+
+    if not hunters or (len(hunters) != len(json.get('hunters'))):
+        raise NotFoundError('One or more specified hunters does not exist')
+
+    # Build up Bird entries
+    birds = []
+    for bird in json.get('birds'):
+        birds.append(Bird(species=bird.get('species'),
+                          gender=bird.get('gender'),
+                          lost=bird.get('lost'),
+                          banded=bird.get('banded'),
+                          mounted=bird.get('mounted')))
+
+    hunt = session.query(Hunt).get(id)
+    hunt.date = datetime.strptime(json.get('date'), '%Y-%m-%d')
+    hunt.location = json.get('location')
+    hunt.timeofday = json.get('timeofday')
+    hunt.hunters = hunters
+    hunt.birds = birds
+
+    session.commit()
+
+
+@app.route('/hunts/{id}', methods=['DELETE'])
+def deleteHunt(id):
+    session = _Session()
+
+    hunt = session.query(Hunt).get(id)
+    if not hunt:
+        raise NotFoundError('No hunt found with id %s' % (id))
 
     huntHunterEntries = session.query(HuntHunter)\
                                .filter(HuntHunter.hunt_id == id)\
@@ -136,7 +193,7 @@ def deleteHunts(id):
     for entry in huntHunterEntries:
         session.delete(entry)
 
-    session.delete(session.query(Hunt).get(id))
+    session.delete(hunt)
     session.commit()
 
 

@@ -14,6 +14,7 @@ def insertSampleData(session):
     annie = Hunter(firstname='Annie', lastname='Oakley')
     jane = Hunter(firstname='Jane', lastname='Doe')
     johns = Hunter(firstname='John', lastname='Smith')
+    crazy = Hunter(firstname='Crazy', lastname='Guy')
 
     hunts = [
         Hunt(date=date(2014, 9, 27),
@@ -83,6 +84,8 @@ def insertSampleData(session):
     ]
 
     session.add_all(hunts)
+    session.add(crazy)
+
     session.commit()
 
 
