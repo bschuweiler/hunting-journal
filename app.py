@@ -1,13 +1,13 @@
 from chalice import Chalice, BadRequestError, NotFoundError, Response
-import collections
+from datetime import datetime
 from sqlalchemy import create_engine, extract
 from sqlalchemy.orm import sessionmaker
-from datetime import datetime
-
-from orm import (
+from chalicelib.orm import (
     Base, Hunt, Bird, Hunter, HuntHunter,
     HuntSchema, BirdSchema, HunterSchema, HuntHunterSchema
 )
+from chalicelib.controller_utils import *
+
 
 _db = 'sqlite:///testdata.db'
 _dbEngine = create_engine(_db)
@@ -29,54 +29,6 @@ app.debug = True
 # TODO: Authentication? (or just defer to hosting w/AWS and API Gateway front?)
 # TODO: HTTP caching ETag or Last-Modified w/ 304, etc. when appropriate
 # TODO: Hypermedia or at least a better index route with available endpoints?
-
-
-def dbResultsToSchemaObjects(results, schema):
-    if isinstance(results, collections.Iterable):
-        returnList = []
-        for result in results:
-            returnList.append(schema.dump(result).data)
-
-        if len(returnList) == 1:
-            return returnList[0]
-        return returnList
-    else:
-        return schema.dump(results).data
-
-
-def getAllResources(model, schema):
-    session = _Session()
-    items = session.query(model).all()
-    return dbResultsToSchemaObjects(items, schema)
-
-
-def validateHuntRequestBody(json):
-    if not isinstance(json, dict):
-        raise BadRequestError(
-            'Invalid body - endpoint accepts single hunt JSON object')
-
-    # TODO: Make this more specific so you know
-    # what's missing or maybe this should be some schema check
-    # and include field-level error info
-
-    # TODO: birds are not required but if provided, should be validated
-    if not json.get('date') or\
-       not json.get('location') or\
-       not json.get('timeofday') or\
-       not json.get('hunters'):
-        raise BadRequestError('Missing required information')
-
-
-def validateHunterRequestBody(json):
-    if not isinstance(json, dict):
-        raise BadRequestError(
-            'Invalid body - endpoint accepts single hunter JSON object')
-
-    if not json.get('firstname'):
-        raise BadRequestError('Missing firstname')
-
-    if not json.get('lastname'):
-        raise BadRequestError('Missing lastname')
 
 
 @app.route('/', methods=['GET'])
