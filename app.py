@@ -19,9 +19,6 @@ app.debug = True
 # TODO: Tests
 # TODO: Swagger
 # TODO: Check for injection issues
-# TODO: Update endpoints for hunt (PUT)
-# TODO: Move some code to some services or something - too much in here:
-# http://chalice.readthedocs.io/en/latest/topics/packaging.html
 # TODO: Clean up imports, make requirements.txt accurate
 # TODO: Some backup option for yearly dumps to csv or something
 # or just be comfortable with format + RDS replicas?
