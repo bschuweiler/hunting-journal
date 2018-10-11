@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+    <!-- jqueryui -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
+        crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp"
+        crossorigin="anonymous">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+        crossorigin="anonymous"></script>
+
+    <!-- Select2 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+</head>
+
+<body>
+    <script>
+        config = {}
+
+        config.hunters = [
+            'Jim',
+            'Steve',
+            'Brian',
+            'Garret',
+            'Brad',
+            'Brice',
+            'Jake',
+            'Matt',
+            'Dennis',
+            'Ryan',
+            'Ryan Jones',
+            'Katrina',
+            'Mark'
+        ];
+
+        config.timesOfDay = ['Morning', 'Afternoon'];
+
+        config.locations = [
+            'First Point',
+            'Sather\'s Island',
+            'Heart Island',
+            'Grass Island',
+            'Sather\'s Point',
+            'Mink Rancher\'s Point',
+            'Second Point',
+            'Sather\'s Bay',
+            'Heart Lake West Shore',
+            'Heart Lake North Shore',
+            'Heart Lake Channel Point',
+            'Iver\'s Point',
+            'Sather\'s Point (channel side)',
+            'First Point (back side)',
+            'Second Point (back side)'
+        ];
+
+        config.species = {}
+
+        config.species.Divers = [
+            'Ring-necked Duck',
+            'Redhead',
+            'Canvasback',
+            'Bufflehead',
+            'Common Goldeneye',
+            'Lesser Scaup',
+            'Greater Scaup',
+            'Ruddy Duck',
+            'Long-tailed Duck',
+            'Barrow\'s Goldeneye',
+            'Black Scoter',
+            'White-winged Scoter',
+            'Surf Scoter',
+            'Common Eider',
+            'Steller\'s Eider',
+            'Spectacled Eider',
+            'King Eider',
+            'Harlequin Duck'
+        ];
+
+        config.species.Dabblers = [
+            'Wood Duck',
+            'Mallard',
+            'Blue-winged Teal',
+            'Green-winged Teal',
+            'Northern Pintail',
+            'Gadwall',
+            'American Wigeon',
+            'American Black Duck',
+            'Northern Shoveler',
+            'Mottled Duck',
+            'Cinnamon Teal',
+            'Eurasian Wigeon',
+            'Black-bellied Whistling Duck',
+            'Fulvous Whistling Duck'
+        ];
+
+        config.species.Mergansers = [
+            'Hooded Merganser',
+            'Common Merganser',
+            'Red-breasted Merganser'
+        ];
+
+        config.species.Geese = [
+            'Canada Goose',
+            'Cackling Goose',
+            'Lesser Snow Goose',
+            'White-fronted Goose',
+            'Ross Goose',
+            'Greater Snow Goose',
+            'Brant',
+            'Barnacle Goose',
+            'Emperor Goose',
+            'Hawaiian Nene Goose'
+        ];
+
+
+        config.species.Other = [
+            'American Coot',
+            'Tundra Swan',
+            'Trumpeter Swan',
+            'Mute Swan',
+            'Sandhill Crane'
+        ];
+
+        config.genders = ['Drake', 'Hen', 'Unknown'];
+
+
+        function appendOptions(optionsList, selectComponent) {
+            $.each(optionsList, function(key, value) {
+                selectComponent
+                    .append($("<option>", { value : value })
+                    .text(value));
+            });
+        }
+
+
+        $(function () {
+            // Make the date form field into a date picker
+            $("#date").datepicker();
+
+            // Make the selects into Select2
+            $(".select-box").select2({
+                placeholder: 'Choose . . .',
+                minimumResultsForSearch: -1,
+                width: '100%'
+            });
+            $(".select-box-with-custom").select2({
+                placeholder: 'Choose . . .',
+                tags: true,
+                width: '100%'
+            });
+
+
+            // Populate options for selects
+            appendOptions(config.timesOfDay, $("#timeOfDay"));
+            appendOptions(config.locations, $("#location"));
+            appendOptions(config.hunters, $("#hunters"));
+            appendOptions(config.genders, $(".gender-select"));
+
+            // Populate birds select
+            $.each(config.species, function(birdGroup, speciesList) {
+                var optGroup = $("<optgroup>", { label : birdGroup}).appendTo(".bird-select")
+                
+                $.each(speciesList, function(index, species) {
+                    optGroup.append($("<option>", { value : species }).text(species));
+                });
+            });
+
+            // Get contents of bird-copy-fields and add it after the "after-add-more" div class.
+            $(".add-more").click(function () {
+                var html = $(".bird-copy-fields").html();
+                $(".after-add-more").after(html);
+            });
+            // Remove the current value of the remove button which has been pressed
+            $("body").on("click", ".remove", function () {
+                $(this).parents(".form-row").remove();
+            });
+        });
+    </script>
+
+    <div class="container">
+        <form action="">
+            <div class="panel panel-default">
+                <div class="panel-heading">Hunt Details</div>
+                <div class="panel-body">
+                    <div class="form-row">
+                        <label for="date">Date:</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="date" placeholder='Choose . . .' required>
+                            <div class="input-group-addon">
+                                <span class="glyphicon glyphicon-calendar"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <label for="timeOfDay">Time of Day:</label>
+                        <select class="form-control select-box" id="timeOfDay" required>
+                            <option></option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label for="location">Location:</label>
+                        <select class="form-control select-box-with-custom" id="location" required>
+                            <option hidden="true"></option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="panel panel-default">
+                <div class="panel-heading">Hunters</div>
+                <div class="panel-body">
+                    <div class="form-row">
+                        <select class="form-control select-box-with-custom" id="hunters" name="hunters[]" multiple="multiple" required>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="panel panel-default">
+                <div class="panel-heading">Birds</div>
+                <div class="panel-body">
+                    <div class="form-row after-add-more">
+                        <div class="col-sm-3"><label>Species</label></div>
+                        <div class="col-sm-2"><label>Gender</label></div>
+                        <div class="col-sm-2"><label>Banded</label></div>
+                        <div class="col-sm-2"><label>Lost</label></div>
+                        <div class="col-sm-2"><label>Mounted</label></div>
+                        <div class="col-sm-1">
+                            <button class="btn btn-success add-more" type="button"><i class="glyphicon glyphicon-plus"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <!-- Bird Copy fields -->
+        <div class="bird-copy-fields hide">
+            <div class="form-row">
+                <div class="col-sm-3">
+                    <select class="form-control bird-select" name="birds[]">
+                    </select>
+                </div>
+                <div class="col-sm-2">
+                    <select class="form-control gender-select" name="gender[]">
+                    </select>
+                </div>
+                <div class="col-sm-2">
+                    <select class="form-control banded-select" name="banded[]">
+                        <option value="FALSE">False</option>
+                        <option value="TRUE">True</option>
+                    </select>
+                </div>
+                <div class="col-sm-2">
+                    <select class="form-control lost-select" name="lost[]">
+                        <option value="FALSE">False</option>
+                        <option value="TRUE">True</option>
+                    </select>
+                </div>
+                <div class="col-sm-2">
+                    <select class="form-control mounted-select" name="mounted[]">
+                        <option value="FALSE">False</option>
+                        <option value="TRUE">True</option>
+                    </select>
+                </div>
+                <div class="col-sm-1">
+                    <button class="btn btn-danger remove" type="button"><i class="glyphicon glyphicon-remove"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
