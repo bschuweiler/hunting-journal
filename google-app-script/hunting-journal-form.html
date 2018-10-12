@@ -133,7 +133,6 @@
 
         config.genders = ['Drake', 'Hen', 'Unknown'];
 
-
         function appendOptions(optionsList, selectComponent) {
             $.each(optionsList, function(key, value) {
                 selectComponent
@@ -142,6 +141,31 @@
             });
         }
 
+        function onSuccess(output) {
+            console.log("Successfully submitted hunt - output: " + output);
+            $("#output-div").empty();
+            $("#output-div").append($("<div>", {class : "alert alert-success", role : "alert"}).text(output));
+            
+            document.getElementById("hunt-form").reset();
+            $("#timeOfDay").val("").trigger("change");
+            $("#location").val("").trigger("change");
+            $("#hunters").val("").trigger("change");
+            $("#hunt-form").find("div.added-bird-row").remove();
+        }
+        
+        function onFail(error) {
+            var output = "Failure submitting hunt: " + error;
+            console.log(output);
+            $("#output-div").empty();
+            $("#output-div").append($("<p>").text(output));
+        }
+
+        function formSubmit() {
+            google.script.run
+              .withSuccessHandler(onSuccess)
+              .withFailureHandler(onFail)
+              .writeHunt(document.forms[0]);   
+        }
 
         $(function () {
             // Make the date form field into a date picker
@@ -188,14 +212,14 @@
     </script>
 
     <div class="container">
-        <form action="">
+        <form id="hunt-form" action="">
             <div class="panel panel-default">
                 <div class="panel-heading">Hunt Details</div>
                 <div class="panel-body">
                     <div class="form-row">
                         <label for="date">Date:</label>
                         <div class="input-group">
-                            <input type="text" class="form-control" id="date" placeholder='Choose . . .' required>
+                            <input type="text" class="form-control" name="date", id="date" placeholder='Choose . . .' required>
                             <div class="input-group-addon">
                                 <span class="glyphicon glyphicon-calendar"></span>
                             </div>
@@ -203,13 +227,13 @@
                     </div>
                     <div class="form-row">
                         <label for="timeOfDay">Time of Day:</label>
-                        <select class="form-control select-box" id="timeOfDay" required>
+                        <select class="form-control select-box" name="timeOfDay", id="timeOfDay" required>
                             <option></option>
                         </select>
                     </div>
                     <div class="form-row">
                         <label for="location">Location:</label>
-                        <select class="form-control select-box-with-custom" id="location" required>
+                        <select class="form-control select-box-with-custom" name="location", id="location" required>
                             <option hidden="true"></option>
                         </select>
                     </div>
@@ -219,7 +243,7 @@
                 <div class="panel-heading">Hunters</div>
                 <div class="panel-body">
                     <div class="form-row">
-                        <select class="form-control select-box-with-custom" id="hunters" name="hunters[]" multiple="multiple" required>
+                        <select class="form-control select-box-with-custom" id="hunters" name="hunters" multiple="multiple" required>
                         </select>
                     </div>
                 </div>
@@ -243,29 +267,29 @@
 
         <!-- Bird Copy fields -->
         <div class="bird-copy-fields hide">
-            <div class="form-row">
+            <div class="form-row added-bird-row">
                 <div class="col-sm-3">
-                    <select class="form-control bird-select" name="birds[]">
+                    <select class="form-control bird-select" name="birds">
                     </select>
                 </div>
                 <div class="col-sm-2">
-                    <select class="form-control gender-select" name="gender[]">
+                    <select class="form-control gender-select" name="gender">
                     </select>
                 </div>
                 <div class="col-sm-2">
-                    <select class="form-control banded-select" name="banded[]">
+                    <select class="form-control banded-select" name="banded">
                         <option value="FALSE">False</option>
                         <option value="TRUE">True</option>
                     </select>
                 </div>
                 <div class="col-sm-2">
-                    <select class="form-control lost-select" name="lost[]">
+                    <select class="form-control lost-select" name="lost">
                         <option value="FALSE">False</option>
                         <option value="TRUE">True</option>
                     </select>
                 </div>
                 <div class="col-sm-2">
-                    <select class="form-control mounted-select" name="mounted[]">
+                    <select class="form-control mounted-select" name="mounted">
                         <option value="FALSE">False</option>
                         <option value="TRUE">True</option>
                     </select>
@@ -275,6 +299,8 @@
                 </div>
             </div>
         </div>
+        <input onclick="formSubmit()" type="button" value="Add Hunt" />
+        <div id="output-div"></div>
     </div>
 </body>
 
