@@ -157,14 +157,14 @@
             var output = "Failure submitting hunt: " + error;
             console.log(output);
             $("#output-div").empty();
-            $("#output-div").append($("<p>").text(output));
+            $("#output-div").append($("<div>", {class : "alert alert-danger", role : "alert"}).text(output));
         }
 
         function formSubmit() {
             google.script.run
               .withSuccessHandler(onSuccess)
               .withFailureHandler(onFail)
-              .writeHunt(document.forms[0]);   
+              .writeForm(document.forms[0]);   
         }
 
         $(function () {
@@ -273,7 +273,7 @@
                     </select>
                 </div>
                 <div class="col-sm-2">
-                    <select class="form-control gender-select" name="gender">
+                    <select class="form-control gender-select" name="genders">
                     </select>
                 </div>
                 <div class="col-sm-2">
