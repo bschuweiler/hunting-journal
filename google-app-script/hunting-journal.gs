@@ -1,12 +1,44 @@
-//basic function that builds the form using index.html as the template
+/**
+Builds the form using index.html as the template
+**/
 function doGet(e) {
   return HtmlService
     .createTemplateFromFile('hunting-journal-form.html')
     .evaluate()
     .setSandboxMode(HtmlService.SandboxMode.NATIVE);
 }
- 
+
+
+/**
+Writes form data to the Google Sheet
+**/
 function writeForm(form) {
+  var input = formDataToInputData(form);
+  
+  if (validateFormData(input)) {
+    var ss = SpreadsheetApp.openById('fill-this-in');
+    
+    writeHunt(ss, input);
+    writeHunters(ss, input);
+
+    if (input.birdsList) {
+      writeBirds(ss, input);
+    }
+    
+    var returnString = 'Hunt written: ' + input;
+    
+    return returnString;
+  }
+  else {
+    throw new Error('Missing required field(s)');
+  }
+}
+
+
+/**
+Converts form data to a normalized input object
+**/
+function formDataToInputData(form) {
   /**
   Example form data coming in:
   {date=10/10/2018,
@@ -20,34 +52,48 @@ function writeForm(form) {
   mounted=[FALSE, FALSE]}
   **/
   
-  var date = form.date;
-  var timeOfDay = form.timeOfDay;
-  var location = form.location;
-  var huntersList = form.hunters;
-  var birdsList = form.birds;
-  var gendersList = form.genders;
-  var lostList = form.lost;
-  var bandedList = form.banded;
-  var mountedList = form.mounted;
+  var input = {};
+  input.date = form.date;
+  input.timeOfDay = form.timeOfDay;
+  input.location = form.location;
+  input.huntersList = normalizeFormArrayField(form.hunters);
   
-  var ss = SpreadsheetApp.openById('1OgFlebGdUybZj5ISZn-uCLbJMkDPMNN9dQsM78u09sI');
+  input.birdsList = normalizeFormArrayField(form.birds);
+  input.gendersList = normalizeFormArrayField(form.genders);
+  input.lostList = normalizeFormArrayField(form.lost);
+  input.bandedList = normalizeFormArrayField(form.banded);
+  input.mountedList = normalizeFormArrayField(form.mounted);
   
-  writeHunt(ss, date, location, timeOfDay);
-  writeHunters(ss, date, location, timeOfDay, huntersList);  
-  writeBirds(ss, date, location, timeOfDay, birdsList, gendersList, lostList, bandedList, mountedList);
-  
-  var returnString = 'Hunt written: {'
-  + date + ', '
-  + timeOfDay + ', '
-  + location + ', '
-  + huntersList.length + ' hunters, '
-  + birdsList.length + ' birds'
-  + '}';
-  
-  return returnString;
+  return input;
 }
 
-function writeHunt(spreadsheet, date, location, timeOfDay) {
+
+/**
+Normalizes array fields from the form
+**/
+function normalizeFormArrayField(field) {
+  return (typeof(field) == "undefined" || (Array.isArray(field)) ? field : [field]);
+}
+
+
+/**
+Validates the input data for required fields
+**/
+function validateFormData(input) {
+  if (input.date
+      && input.timeOfDay
+      && input.location
+      && input.huntersList) {
+    return true;
+  }
+  return false;
+}
+
+
+/**
+Writes hunt row to the 'Hunts' sheet of the Google Sheet
+**/
+function writeHunt(spreadsheet, input) {
   var sheet = spreadsheet.getSheetByName('Hunts');
   
   var originalLastRow = sheet.getLastRow();
@@ -57,7 +103,7 @@ function writeHunt(spreadsheet, date, location, timeOfDay) {
   
   // setValues takes multi-dimensional array
   // (first dimension is rows, second is columns)
-  var values = [[date, location, timeOfDay]];
+  var values = [[input.date, input.location, input.timeOfDay]];
   writeRange.setValues(values);
   
   // fill down the calc'd cells from previous last row
@@ -70,9 +116,13 @@ function writeHunt(spreadsheet, date, location, timeOfDay) {
   scriptIndicatorRange.setValue("TRUE");
 }
 
-function writeHunters(spreadsheet, date, location, timeOfDay, huntersList) {
+
+/**
+Writes hunters rows to the 'Hunters' sheet of the Google Sheet
+**/
+function writeHunters(spreadsheet, input) {
   var sheet = spreadsheet.getSheetByName('Hunters');
-  for each (var hunter in huntersList) {
+  for each (var hunter in input.huntersList) {
     var originalLastRow = sheet.getLastRow();
     var newRow = originalLastRow + 1;
     var numRows = 1; var column = 1; var numColumns = 4;
@@ -80,7 +130,7 @@ function writeHunters(spreadsheet, date, location, timeOfDay, huntersList) {
     
     // setValues takes multi-dimensional array
     // (first dimension is rows, second is columns)
-    var values = [[date, location, timeOfDay, hunter]];
+    var values = [[input.date, input.location, input.timeOfDay, hunter]];
     writeRange.setValues(values);
     
     // fill down the calc'd cells from previous last row
@@ -94,9 +144,13 @@ function writeHunters(spreadsheet, date, location, timeOfDay, huntersList) {
   }
 }
 
-function writeBirds(spreadsheet, date, location, timeOfDay, birdsList, gendersList, lostList, bandedList, mountedList) {
+
+/**
+Writes bird rows to the 'Birds' sheet of the Google Sheet
+**/
+function writeBirds(spreadsheet, input) {
   var sheet = spreadsheet.getSheetByName('Birds');
-  for (var index in birdsList) {
+  for (var index in input.birdsList) {
     var originalLastRow = sheet.getLastRow();
     var newRow = originalLastRow + 1;
     var numRows = 1; var column = 1; var numColumns = 8;
@@ -104,7 +158,10 @@ function writeBirds(spreadsheet, date, location, timeOfDay, birdsList, gendersLi
     
     // setValues takes multi-dimensional array
     // (first dimension is rows, second is columns)
-    var values = [[date, location, timeOfDay, birdsList[index], gendersList[index], bandedList[index], lostList[index], mountedList[index]]];
+    var values = [[input.date, input.location, input.timeOfDay,
+                   input.birdsList[index], input.gendersList[index],
+                   input.bandedList[index], input.lostList[index],
+                   input.mountedList[index]]];
     writeRange.setValues(values);
     
     // fill down the calc'd cells from previous last row

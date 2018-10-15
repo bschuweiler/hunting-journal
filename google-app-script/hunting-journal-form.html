@@ -28,39 +28,13 @@
         config = {}
 
         config.hunters = [
-            'Jim',
-            'Steve',
-            'Brian',
-            'Garret',
-            'Brad',
-            'Brice',
-            'Jake',
-            'Matt',
-            'Dennis',
-            'Ryan',
-            'Ryan Jones',
-            'Katrina',
-            'Mark'
+            'Fill these in for some preset choices'
         ];
 
         config.timesOfDay = ['Morning', 'Afternoon'];
 
         config.locations = [
-            'First Point',
-            'Sather\'s Island',
-            'Heart Island',
-            'Grass Island',
-            'Sather\'s Point',
-            'Mink Rancher\'s Point',
-            'Second Point',
-            'Sather\'s Bay',
-            'Heart Lake West Shore',
-            'Heart Lake North Shore',
-            'Heart Lake Channel Point',
-            'Iver\'s Point',
-            'Sather\'s Point (channel side)',
-            'First Point (back side)',
-            'Second Point (back side)'
+            'Fill these in for some preset choices'
         ];
 
         config.species = {}
@@ -151,6 +125,7 @@
             $("#location").val("").trigger("change");
             $("#hunters").val("").trigger("change");
             $("#hunt-form").find("div.added-bird-row").remove();
+            $("#submit-button").prop('disabled', false);
         }
         
         function onFail(error) {
@@ -158,9 +133,13 @@
             console.log(output);
             $("#output-div").empty();
             $("#output-div").append($("<div>", {class : "alert alert-danger", role : "alert"}).text(output));
+            $("#submit-button").prop('disabled', false);
         }
 
         function formSubmit() {
+            $("#submit-button").prop('disabled', true);
+            $("#output-div").empty();
+            $("#output-div").append($("<p>").text("Working..."));
             google.script.run
               .withSuccessHandler(onSuccess)
               .withFailureHandler(onFail)
@@ -299,7 +278,7 @@
                 </div>
             </div>
         </div>
-        <input onclick="formSubmit()" type="button" value="Add Hunt" />
+        <input onclick="formSubmit()" type="button" id="submit-button" value="Add Hunt" />
         <div id="output-div"></div>
     </div>
 </body>
