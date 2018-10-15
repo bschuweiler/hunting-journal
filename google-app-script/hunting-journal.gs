@@ -25,7 +25,8 @@ function writeForm(form) {
       writeBirds(ss, input);
     }
     
-    var returnString = 'Hunt written: ' + input;
+    var returnString = Utilities.formatString('Hunt written: {%s, %s, %s}',
+                          input.date, input.timeOfDay, input.location);
     
     return returnString;
   }
