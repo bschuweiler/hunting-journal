@@ -198,8 +198,10 @@ def getBird(id):
 
 @app.route('/hunters', methods=['GET'])
 def getHunters():
+    session = _Session()
+
     hunterSchema = HunterSchema()
-    return getAllResources(Hunter, hunterSchema)
+    return getAllResources(session, Hunter, hunterSchema)
 
 
 @app.route('/hunters/{id}', methods=['GET'])

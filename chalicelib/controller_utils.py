@@ -15,8 +15,7 @@ def dbResultsToSchemaObjects(results, schema):
         return schema.dump(results).data
 
 
-def getAllResources(model, schema):
-    session = _Session()
+def getAllResources(session, model, schema):
     items = session.query(model).all()
     return dbResultsToSchemaObjects(items, schema)
 
